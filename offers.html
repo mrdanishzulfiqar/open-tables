@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Value Deals & Offers – OPEN TABLES</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<div class="offers-hero-strip" id="offerStrip">🎉 Hot Combos & Deals Available at OPEN TABLES — Call 03224710141!</div>
+
+<nav class="navbar" id="navbar">
+  <div class="nav-brand">
+    <span class="brand-logo">🍽️</span>
+    <div>
+      <span class="brand-name">OPEN TABLES</span>
+      <span class="brand-tagline">12 Canal Rd, Lahore</span>
+    </div>
+  </div>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="menu.html">Menu</a></li>
+    <li><a href="offers.html" class="active">Offers & Deals</a></li>
+    <li><a href="order.html">Order Online</a></li>
+    <li><a href="index.html#about">About</a></li>
+    <li><a href="index.html#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<section class="page-hero" style="padding-top:9rem;">
+  <h1>Value Deals & Combos</h1>
+  <p>Official combo deals from our menu card — save big on pizzas, burgers, fries & drinks!</p>
+</section>
+
+<section style="padding:3rem 0 5rem;background:var(--dark2);">
+  <div class="container">
+    <div class="offers-grid" id="allOffersGrid"></div>
+    <div id="noOffers" style="display:none;text-align:center;color:var(--text-muted);padding:3rem;">
+      <p style="font-size:2rem;">😔</p>
+      <p>No active offers at the moment. Check back soon!</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW TO USE SECTION -->
+<section style="padding:3rem 0 5rem;background:var(--dark);">
+  <div class="container">
+    <div class="section-header">
+      <h2>How to Order Deals</h2>
+      <p>Quick & easy ordering for delivery, takeaway or dine-in</p>
+    </div>
+    <div class="highlights" style="background:transparent;padding:0;">
+      <div class="container" style="max-width:900px;">
+        <div class="highlight-card">
+          <span class="hi-icon">1️⃣</span>
+          <h3>Pick Your Deal</h3>
+          <p>Choose your favorite Pizza or Burger Deal Box from the offers above.</p>
+        </div>
+        <div class="highlight-card">
+          <span class="hi-icon">2️⃣</span>
+          <h3>Copy Deal Code</h3>
+          <p>Click on the coupon code (e.g. DEAL2, BOX1, FAMILYDEAL) to copy it.</p>
+        </div>
+        <div class="highlight-card">
+          <span class="hi-icon">3️⃣</span>
+          <h3>Apply at Checkout</h3>
+          <p>Go to Order Online, paste your code or call 03224710141 directly.</p>
+        </div>
+        <div class="highlight-card">
+          <span class="hi-icon">4️⃣</span>
+          <h3>Fast Delivery / Dine-in</h3>
+          <p>Hot, fresh food prepared right at 12 Canal Road.</p>
+        </div>
+      </div>
+    </div>
+    <div class="section-footer" style="margin-top:2rem;">
+      <a href="order.html" class="btn btn-primary">Order Deals Online</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-bottom">
+    <p>© 2024 OPEN TABLES · 12 Canal Rd, Lahore · <a href="tel:03224710141">03224710141</a> · <a href="index.html">Back to Home</a></p>
+  </div>
+</footer>
+
+<!-- Bottom-Right Floating Cart Button -->
+<button class="cart-float" id="cartFloatBtn" onclick="window.location='order.html'">
+  🛒 <span class="cart-float-text">Cart</span> <span class="cart-float-count cart-count-badge">0</span> <span class="cart-float-total">Rs. 0</span>
+</button>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const offers = getOffers().filter(o => o.active);
+  const grid = document.getElementById('allOffersGrid');
+  const noOffers = document.getElementById('noOffers');
+  if (offers.length === 0) {
+    grid.style.display = 'none';
+    noOffers.style.display = 'block';
+  } else {
+    grid.innerHTML = offers.map(o => offerCard(o)).join('');
+    grid.querySelectorAll('.offer-code').forEach(el => {
+      el.addEventListener('click', () => {
+        navigator.clipboard.writeText(el.textContent).then(() => showToast('Deal code copied! 🎉'));
+      });
+    });
+  }
+  document.getElementById('offerStrip').textContent = `🎉 ${offers.length} Active Deals Available at OPEN TABLES — Call 03224710141!`;
+});
+</script>
+</body>
+</html>

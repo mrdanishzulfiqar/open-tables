@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Online – OPEN TABLES Lahore</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+  <div class="nav-brand">
+    <span class="brand-logo">🍽️</span>
+    <div>
+      <span class="brand-name">OPEN TABLES</span>
+      <span class="brand-tagline">12 Canal Rd, Lahore</span>
+    </div>
+  </div>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="menu.html">Menu</a></li>
+    <li><a href="offers.html">Offers & Deals</a></li>
+    <li><a href="order.html" class="active">Order Online</a></li>
+    <li><a href="index.html#about">About</a></li>
+    <li><a href="index.html#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<section class="page-hero">
+  <h1>Online Delivery</h1>
+  <p>OPEN TABLES · 12 Canal Rd, Lahore · Order Hot & Fresh Delivery: 03224710141</p>
+</section>
+
+<section style="padding:3rem 0 5rem;">
+  <div class="container">
+    <div class="order-layout">
+
+      <!-- Menu Items -->
+      <div class="order-menu">
+
+        <!-- Delivery Status Banner -->
+        <div style="background: rgba(201,168,76,0.12); border: 1px solid var(--gold); border-radius: 10px; padding: .85rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem;">
+          <div style="display: flex; align-items: center; gap: .75rem;">
+            <span style="font-size: 1.8rem;">🚴</span>
+            <div>
+              <strong style="color: var(--gold); display: block; font-size: 1.05rem;">Home Delivery in Lahore</strong>
+              <span style="color: var(--text-muted); font-size: .84rem;">Prepared fresh at 12 Canal Rd and dispatched straight to your doorstep · Delivery Fee: Rs. 150</span>
+            </div>
+          </div>
+          <span style="background: var(--gold); color: #1a0f04; font-weight: 800; font-size: .75rem; padding: .3rem .8rem; border-radius: 20px; text-transform: uppercase;">Delivery Service</span>
+        </div>
+
+        <!-- Filter -->
+        <div class="menu-filters" id="orderFilters" style="justify-content:flex-start;margin-bottom:1.5rem;"></div>
+
+        <div id="orderMenuContent"></div>
+      </div>
+
+      <!-- Cart Panel -->
+      <div class="cart-panel" id="cartSection">
+        <h3>🛒 Your Cart</h3>
+        <div class="cart-items" id="cartItems">
+          <div class="cart-empty">Your cart is empty.<br/>Click "+ Add" on items to order.</div>
+        </div>
+
+        <div class="cart-summary" id="cartSummary" style="display:none">
+          <div class="cart-summary-row"><span>Subtotal</span><span id="summarySubtotal">Rs. 0</span></div>
+          <div class="cart-summary-row" id="discountRow" style="display:none;color:#27ae60"><span>Deal Discount</span><span id="summaryDiscount">-Rs. 0</span></div>
+          <div class="cart-summary-row" id="deliveryRow"><span>Delivery Fee (Lahore)</span><span>Rs. 150</span></div>
+          <div class="cart-summary-row total"><span>Total Payable</span><span id="summaryTotal">Rs. 0</span></div>
+        </div>
+
+        <!-- Coupon / Deal -->
+        <div id="couponSection" style="display:none;margin-top:.75rem;">
+          <div class="order-coupon">
+            <input type="text" id="couponInput" placeholder="Deal Code (e.g. DEAL2, BOX1)" />
+            <button class="btn btn-outline btn-sm" onclick="applyCoupon()">Apply</button>
+          </div>
+          <div id="couponMsg" style="font-size:.82rem;"></div>
+        </div>
+
+        <!-- Delivery Customer Form -->
+        <div id="orderFormSection" style="display:none;margin-top:1rem;">
+          <h4 style="color:var(--gold);margin-bottom:.75rem;font-size:.95rem;">Delivery Address & Contact</h4>
+          <div class="order-form-fields active">
+            <label>Full Name *</label>
+            <input type="text" id="custName" placeholder="e.g. Usman Ali" required />
+            <label>Phone Number *</label>
+            <input type="tel" id="custPhone" placeholder="03XX-XXXXXXX" required />
+            <label>Complete Delivery Address in Lahore *</label>
+            <textarea id="custAddress" rows="3" placeholder="House / Flat #, Street #, Sector / Block, Housing Scheme, Lahore" required></textarea>
+            <label>Special Instructions / Notes</label>
+            <textarea id="custNote" rows="2" placeholder="e.g. Extra ketchup, mild spice, ring the bell"></textarea>
+            <label>Payment Method</label>
+            <select id="custPayment">
+              <option>Cash on Delivery (COD)</option>
+              <option>JazzCash / EasyPaisa</option>
+              <option>Online Bank Transfer</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:.5rem" onclick="placeOrder()">Confirm & Place Delivery Order 🚴</button>
+        </div>
+
+        <div class="cart-actions" id="cartActionsDefault">
+          <button class="btn btn-primary" onclick="proceedToCheckout()">Proceed to Checkout</button>
+          <button class="btn btn-outline btn-sm" onclick="clearCart()">Clear Cart</button>
+        </div>
+
+        <!-- Order Success -->
+        <div class="order-success" id="orderSuccess">
+          <div style="font-size:2.5rem;">🎉</div>
+          <h3>Delivery Order Placed!</h3>
+          <p id="orderConfirmMsg">Your order is received! Our kitchen team at OPEN TABLES (12 Canal Rd) is preparing your meal.</p>
+          <p id="orderIdDisplay" style="color:var(--gold);font-weight:700;margin-top:.75rem;"></p>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.5rem;">Kitchen Dispatch Helpline: <strong>03224710141</strong></p>
+          <a href="menu.html" class="btn btn-outline" style="margin-top:1rem">Order More</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Bottom-Right Floating Cart Button -->
+<button class="cart-float" id="cartFloatBtn" onclick="document.getElementById('cartSection').scrollIntoView({behavior:'smooth'})">
+  🛒 <span class="cart-float-text">Cart</span> <span class="cart-float-count cart-count-badge">0</span> <span class="cart-float-total">Rs. 0</span>
+</button>
+
+<footer class="footer">
+  <div class="footer-bottom">
+    <p>© 2024 OPEN TABLES · 12 Canal Rd, Lahore · Delivery Hotline: <a href="tel:03224710141">03224710141</a> · <a href="index.html">Back to Home</a></p>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+const orderType = 'Delivery'; // Delivery only as requested
+let appliedOffer = null;
+
+function renderOrderMenu() {
+  const products = getProducts().filter(p => p.available);
+  const categories = getCategories();
+  const presentCats = categories.filter(c => products.some(p => p.category === c));
+
+  const filtersEl = document.getElementById('orderFilters');
+  const allCats = ['All Items', ...presentCats];
+  let activeCat = 'All Items';
+  filtersEl.innerHTML = allCats.map(c =>
+    `<button class="filter-btn${c === 'All Items' ? ' active' : ''}" data-cat="${c}">${c}</button>`
+  ).join('');
+  filtersEl.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filtersEl.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeCat = btn.dataset.cat;
+      buildMenuItems();
+    });
+  });
+
+  function buildMenuItems() {
+    const shownCats = activeCat === 'All Items' ? presentCats : [activeCat];
+    document.getElementById('orderMenuContent').innerHTML = shownCats.map(cat => {
+      const items = products.filter(p => p.category === cat);
+      if (!items.length) return '';
+      return `<div class="category-section">
+        <h3 class="category-title">${cat}</h3>
+        <div class="dishes-grid">
+          ${items.map(p => dishCard(p)).join('')}
+        </div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('orderMenuContent').querySelectorAll('.dish-add-btn').forEach(btn => {
+      btn.addEventListener('click', () => { addToCart(+btn.dataset.id); renderCart(); });
+    });
+  }
+  buildMenuItems();
+}
+
+function renderCart() {
+  const cartEl = document.getElementById('cartItems');
+  const summaryEl = document.getElementById('cartSummary');
+  const couponEl = document.getElementById('couponSection');
+  const formEl = document.getElementById('orderFormSection');
+  const actionsEl = document.getElementById('cartActionsDefault');
+
+  if (cart.length === 0) {
+    cartEl.innerHTML = '<div class="cart-empty">Your cart is empty.<br/>Click "+ Add" on items to order.</div>';
+    summaryEl.style.display = 'none';
+    couponEl.style.display = 'none';
+    actionsEl.style.display = 'flex';
+    formEl.style.display = 'none';
+    updateCartBadge();
+    return;
+  }
+
+  cartEl.innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <span class="cart-item-name">${item.name}</span>
+      <div class="cart-qty-controls">
+        <button class="cart-qty-btn" onclick="updateCartItem(${item.id},-1);renderCart()">−</button>
+        <span class="cart-qty">${item.qty}</span>
+        <button class="cart-qty-btn" onclick="updateCartItem(${item.id},1);renderCart()">+</button>
+      </div>
+      <span class="cart-item-price">Rs. ${(item.price * item.qty).toLocaleString()}</span>
+      <button class="cart-remove" onclick="removeFromCart(${item.id});renderCart()">✕</button>
+    </div>
+  `).join('');
+
+  const subtotal = getCartTotal();
+  let discount = 0;
+  if (appliedOffer) {
+    if (appliedOffer.discount && appliedOffer.discount.includes('%')) {
+      const pct = parseInt(appliedOffer.discount);
+      discount = Math.round(subtotal * pct / 100);
+    } else {
+      discount = Math.round(subtotal * 0.10);
+    }
+  }
+  const deliveryFee = 150; // Standard delivery fee in Lahore
+  const total = Math.max(0, subtotal - discount + deliveryFee);
+
+  document.getElementById('summarySubtotal').textContent = `Rs. ${subtotal.toLocaleString()}`;
+  document.getElementById('summaryTotal').textContent = `Rs. ${total.toLocaleString()}`;
+  document.getElementById('discountRow').style.display = discount > 0 ? 'flex' : 'none';
+  document.getElementById('summaryDiscount').textContent = `-Rs. ${discount.toLocaleString()}`;
+  document.getElementById('deliveryRow').style.display = 'flex';
+  summaryEl.style.display = 'block';
+  couponEl.style.display = 'block';
+  updateCartBadge();
+}
+
+function applyCoupon() {
+  const code = document.getElementById('couponInput').value.trim().toUpperCase();
+  const offers = getOffers();
+  const offer = offers.find(o => o.code === code && o.active);
+  const msgEl = document.getElementById('couponMsg');
+  if (!offer) {
+    msgEl.textContent = '❌ Invalid or expired deal code.';
+    msgEl.style.color = '#e74c3c';
+    appliedOffer = null;
+  } else if (getCartTotal() < (offer.minOrder || 0)) {
+    msgEl.textContent = `❌ Minimum order of Rs. ${offer.minOrder.toLocaleString()} required.`;
+    msgEl.style.color = '#e74c3c';
+    appliedOffer = null;
+  } else {
+    appliedOffer = offer;
+    msgEl.textContent = `✅ Deal applied: ${offer.title} (${offer.discount})!`;
+    msgEl.style.color = '#27ae60';
+  }
+  renderCart();
+}
+
+function proceedToCheckout() {
+  if (cart.length === 0) { showToast('Please add items to your cart first!', true); return; }
+  document.getElementById('cartActionsDefault').style.display = 'none';
+  document.getElementById('orderFormSection').style.display = 'block';
+  document.getElementById('orderFormSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function clearCart() {
+  cart = [];
+  appliedOffer = null;
+  saveCart();
+  renderCart();
+  updateCartBadge();
+  showToast('Cart cleared');
+}
+
+function placeOrder() {
+  const name = document.getElementById('custName').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const address = document.getElementById('custAddress').value.trim();
+  if (!name || !phone) { showToast('Please enter your name and phone number.', true); return; }
+  if (!address) { showToast('Please enter your complete delivery address in Lahore.', true); return; }
+
+  const subtotal = getCartTotal();
+  const discount = appliedOffer ? (appliedOffer.discount && appliedOffer.discount.includes('%') ? Math.round(subtotal * parseInt(appliedOffer.discount) / 100) : Math.round(subtotal * 0.10)) : 0;
+  const deliveryFee = 150;
+  const total = subtotal - discount + deliveryFee;
+
+  const orderId = 'OT-DEL-' + Date.now().toString().slice(-6);
+  const orders = getOrders();
+  orders.unshift({
+    id: orderId,
+    customer: name,
+    phone,
+    address,
+    type: 'Delivery',
+    items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+    total,
+    status: 'pending',
+    time: new Date().toLocaleString('en-PK', { hour12: false }),
+    note: document.getElementById('custNote')?.value || '',
+    coupon: appliedOffer?.code || ''
+  });
+  saveOrders(orders);
+
+  cart = [];
+  appliedOffer = null;
+  saveCart();
+  updateCartBadge();
+
+  document.getElementById('cartItems').innerHTML = '';
+  document.getElementById('cartSummary').style.display = 'none';
+  document.getElementById('couponSection').style.display = 'none';
+  document.getElementById('cartActionsDefault').style.display = 'none';
+  document.getElementById('orderFormSection').style.display = 'none';
+  const successEl = document.getElementById('orderSuccess');
+  successEl.style.display = 'block';
+  document.getElementById('orderIdDisplay').textContent = `Order Reference: ${orderId}`;
+  document.getElementById('orderConfirmMsg').textContent =
+    `Thank you, ${name}! Your delivery order has been received at OPEN TABLES (12 Canal Rd). We'll dispatch to ${address} and call you at ${phone}.`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderOrderMenu();
+  renderCart();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Menu – OPEN TABLES Lahore</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+  <div class="nav-brand">
+    <span class="brand-logo">🍽️</span>
+    <div>
+      <span class="brand-name">OPEN TABLES</span>
+      <span class="brand-tagline">12 Canal Rd, Lahore</span>
+    </div>
+  </div>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="menu.html" class="active">Menu</a></li>
+    <li><a href="offers.html">Offers & Deals</a></li>
+    <li><a href="order.html">Order Online</a></li>
+    <li><a href="index.html#about">About</a></li>
+    <li><a href="index.html#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<section class="page-hero">
+  <h1>OPEN TABLES Menu</h1>
+  <p>Fresh Burgers, Stone-Baked Pizzas, Wraps, Shawarmas, Platters & Pan Asian · Delivery: 03224710141</p>
+</section>
+
+<section style="padding:3rem 0 5rem;">
+  <div class="container">
+
+    <!-- Dynamic Category Filters -->
+    <div class="menu-filters" id="menuFilters">
+      <button class="filter-btn active" data-cat="All Items">All Items</button>
+    </div>
+
+    <!-- Menu content -->
+    <div id="menuContent"></div>
+
+  </div>
+</section>
+
+<!-- Bottom-Right Floating Cart Button -->
+<button class="cart-float" id="cartFloatBtn" onclick="window.location='order.html'">
+  🛒 <span class="cart-float-text">Cart</span> <span class="cart-float-count cart-count-badge">0</span> <span class="cart-float-total">Rs. 0</span>
+</button>
+
+<footer class="footer">
+  <div class="footer-bottom">
+    <p>© 2024 OPEN TABLES · 12 Canal Rd, Lahore · Order: <a href="tel:03224710141">03224710141</a> · <a href="index.html">Back to Home</a></p>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const products = getProducts().filter(p => p.available);
+  const allCategories = getCategories();
+  const presentCats = allCategories.filter(c => products.some(p => p.category === c));
+  const filterList = ['All Items', ...presentCats];
+  let activeCategory = 'All Items';
+
+  // Build filter buttons
+  const filtersEl = document.getElementById('menuFilters');
+  filtersEl.innerHTML = filterList.map(cat =>
+    `<button class="filter-btn${cat === 'All Items' ? ' active' : ''}" data-cat="${cat}">${cat}</button>`
+  ).join('');
+  filtersEl.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filtersEl.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeCategory = btn.dataset.cat;
+      renderMenu();
+    });
+  });
+
+  function renderMenu() {
+    const menuEl = document.getElementById('menuContent');
+    const cats = activeCategory === 'All Items' ? presentCats : [activeCategory];
+    menuEl.innerHTML = cats.map(cat => {
+      const items = products.filter(p => p.category === cat);
+      if (!items.length) return '';
+      return `<div class="category-section">
+        <h3 class="category-title">${cat}</h3>
+        ${items.map(p => `
+          <div class="menu-item-row" style="display:flex;align-items:center;gap:1.25rem;padding:1rem 0;border-bottom:1px solid rgba(201,168,76,.1);">
+            <div style="width:70px;height:70px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#150a04;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">
+              ${p.image ? `<img src="${p.image}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null;this.parentElement.innerHTML='<span style=\\\'font-size:2rem;\\\'>${p.emoji || '🍽️'}</span>'"/>` : `<span style="font-size:2.2rem;">${p.emoji || '🍽️'}</span>`}
+            </div>
+            <div class="item-details" style="flex:1;">
+              <div class="item-name" style="font-size:1.1rem;font-weight:700;">${p.name} ${p.badge ? `<span class="dish-badge badge-${p.badge}" style="vertical-align:middle;margin-left:0.35rem;">${p.badge}</span>` : ''}</div>
+              <div class="item-desc-sm" style="color:var(--text-muted);font-size:0.85rem;margin-top:0.25rem;">${p.desc || ''}</div>
+            </div>
+            <span class="item-price-col" style="font-size:1.05rem;font-weight:700;color:var(--gold);">Rs. ${p.price.toLocaleString()}</span>
+            <button class="dish-add-btn" data-id="${p.id}" style="flex-shrink:0">+ Add</button>
+          </div>
+        `).join('')}
+      </div>`;
+    }).join('');
+
+    menuEl.querySelectorAll('.dish-add-btn').forEach(btn => {
+      btn.addEventListener('click', () => addToCart(+btn.dataset.id));
+    });
+  }
+  renderMenu();
+  updateCartBadge();
+});
+</script>
+</body>
+</html>
