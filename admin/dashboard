@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Owner Portal – OPEN TABLES</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- AUTH GUARD -->
+<script>
+  if (sessionStorage.getItem('opentables_admin_auth') !== 'true') {
+    window.location.replace('index.html');
+  }
+</script>
+
+<div class="admin-wrap">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar-logo">
+      <div style="font-size:2rem;">🍽️</div>
+      <h2>OPEN TABLES</h2>
+      <p>Store Owner Portal</p>
+    </div>
+
+    <div class="admin-nav-item active" onclick="showSection('dashboard',this)">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="admin-nav-item" onclick="showSection('products',this)">
+      <span class="nav-icon">🍔</span> Manage Menu
+    </div>
+    <div class="admin-nav-item" onclick="showSection('offers',this)">
+      <span class="nav-icon">🎉</span> Deals & Offers
+    </div>
+    <div class="admin-nav-item" onclick="showSection('orders',this)">
+      <span class="nav-icon">🚴</span> Delivery Orders
+      <span class="notification-dot" id="pendingBadge" style="display:none">0</span>
+    </div>
+    <div class="admin-nav-item" onclick="showSection('settings',this)" style="margin-top:auto;">
+      <span class="nav-icon">⚙️</span> Settings & Password
+    </div>
+    <div class="admin-nav-item" onclick="adminLogout()" style="color:#e74c3c;">
+      <span class="nav-icon">🚪</span> Logout
+    </div>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="admin-content">
+
+    <!-- ─── DASHBOARD ─── -->
+    <section class="admin-section active" id="sec-dashboard">
+      <div class="admin-header">
+        <h1>📊 OPEN TABLES Overview</h1>
+        <span style="color:var(--text-muted);font-size:.85rem;" id="lastUpdated"></span>
+      </div>
+
+      <div class="admin-stats" id="dashStats"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1.5rem;" class="dash-split">
+        <!-- Recent Orders -->
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:1.25rem;">
+          <h3 style="color:var(--gold);margin-bottom:1rem;font-size:1rem;">🚴 Recent Delivery Orders</h3>
+          <div id="recentOrdersList"></div>
+          <button class="btn btn-outline btn-sm" style="margin-top:.75rem" onclick="showSection('orders',document.querySelector('[onclick*=orders]'))">View All Orders</button>
+        </div>
+        <!-- Low Stock / Unavailable -->
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:1.25rem;">
+          <h3 style="color:var(--gold);margin-bottom:1rem;font-size:1rem;">⚠️ Out-of-Stock / Hidden Items</h3>
+          <div id="unavailableList"></div>
+          <button class="btn btn-outline btn-sm" style="margin-top:.75rem" onclick="showSection('products',document.querySelector('[onclick*=products]'))">Manage Menu Items</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PRODUCTS ─── -->
+    <section class="admin-section" id="sec-products">
+      <div class="admin-header">
+        <h1>🍔 Manage Menu (Add, Edit, Delete, Photos)</h1>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" onclick="openCategoryModal()">📁 + New Category</button>
+          <button class="btn btn-primary btn-sm" onclick="openProductModal()">+ Add New Item</button>
+        </div>
+      </div>
+
+      <!-- Category filter -->
+      <div class="menu-filters" id="productCatFilter" style="justify-content:flex-start;margin-bottom:1.25rem;"></div>
+
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Photo / Icon</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Price (Rs.)</th>
+              <th>Badge</th>
+              <th>Available</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="productsTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── OFFERS ─── -->
+    <section class="admin-section" id="sec-offers">
+      <div class="admin-header">
+        <h1>🎉 Manage Customer Offers & Deals</h1>
+        <button class="btn btn-primary btn-sm" onclick="openOfferModal()">+ Create New Deal</button>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Deal Title</th>
+              <th>Discount / Value</th>
+              <th>Promo Code</th>
+              <th>Min. Order</th>
+              <th>Valid Until</th>
+              <th>Active</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="offersTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── ORDERS ─── -->
+    <section class="admin-section" id="sec-orders">
+      <div class="admin-header">
+        <h1>🚴 Delivery Orders</h1>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+          <select id="orderStatusFilter" class="filter-btn" style="background:var(--dark2);color:var(--text);padding:.45rem .85rem;border:1px solid var(--border);border-radius:20px;cursor:pointer;font-size:.88rem;" onchange="renderOrdersTable()">
+            <option value="all">All Delivery Orders</option>
+            <option value="pending">Pending</option>
+            <option value="preparing">Preparing</option>
+            <option value="ready">Out for Delivery</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer</th>
+              <th>Delivery Address</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Time</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── SETTINGS ─── -->
+    <section class="admin-section" id="sec-settings">
+      <div class="admin-header">
+        <h1>⚙️ Owner Settings & Security</h1>
+      </div>
+      <div style="max-width:560px;">
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.25rem;">
+          <h3 style="color:var(--gold);margin-bottom:1rem;">🔑 Change Owner Portal Password</h3>
+          <label style="font-size:.82rem;color:var(--text-muted)">Current Password</label>
+          <input type="password" id="curPw" placeholder="Enter current password" style="width:100%;margin-bottom:.75rem;background:var(--dark2);border:1px solid var(--border);color:var(--text);padding:.65rem .85rem;border-radius:6px;font-size:.9rem;" />
+          <label style="font-size:.82rem;color:var(--text-muted)">New Password</label>
+          <input type="password" id="newPw" placeholder="New password (min. 6 characters)" style="width:100%;margin-bottom:.75rem;background:var(--dark2);border:1px solid var(--border);color:var(--text);padding:.65rem .85rem;border-radius:6px;font-size:.9rem;" />
+          <label style="font-size:.82rem;color:var(--text-muted)">Confirm New Password</label>
+          <input type="password" id="confirmPw" placeholder="Confirm new password" style="width:100%;margin-bottom:.75rem;background:var(--dark2);border:1px solid var(--border);color:var(--text);padding:.65rem .85rem;border-radius:6px;font-size:.9rem;" />
+          <button class="btn btn-primary btn-sm" onclick="changePassword()">Save New Password</button>
+          <div id="pwMsg" style="margin-top:.5rem;font-size:.85rem;"></div>
+        </div>
+
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.25rem;">
+          <h3 style="color:var(--gold);margin-bottom:1rem;">🏪 Restaurant Details</h3>
+          <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:0.5rem;"><strong>Name:</strong> OPEN TABLES</p>
+          <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:0.5rem;"><strong>Address:</strong> 12 Canal Rd, Lahore Medical Housing Society Commercial Area Phase 1, Lahore, 54000</p>
+          <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:0.5rem;"><strong>Phone:</strong> 03224710141</p>
+          <p style="color:var(--text-muted);font-size:.88rem;"><strong>Service Mode:</strong> Home Delivery Only</p>
+        </div>
+
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.25rem;">
+          <h3 style="color:var(--gold);margin-bottom:1rem;">🗑️ Data Management</h3>
+          <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:1rem;">Clear order history or reload original menu data.</p>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+            <button class="btn btn-danger btn-sm" onclick="clearOrders()">Clear All Orders</button>
+            <button class="btn btn-outline btn-sm" onclick="resetData()">Reload Original Menu</button>
+          </div>
+        </div>
+
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:1.5rem;">
+          <h3 style="color:var(--gold);margin-bottom:.75rem;">🌐 View Live Website</h3>
+          <div style="display:flex;flex-direction:column;gap:.5rem;">
+            <a href="../index.html" target="_blank" class="btn btn-outline btn-sm" style="text-align:left">🏠 Customer Homepage</a>
+            <a href="../menu.html" target="_blank" class="btn btn-outline btn-sm" style="text-align:left">🍽️ Customer Menu</a>
+            <a href="../offers.html" target="_blank" class="btn btn-outline btn-sm" style="text-align:left">🎉 Customer Offers & Deals</a>
+            <a href="../order.html" target="_blank" class="btn btn-outline btn-sm" style="text-align:left">📦 Delivery Order Page</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============================================================
+     MODALS
+     ============================================================ -->
+
+<!-- Category Modal -->
+<div class="modal-overlay" id="categoryModal">
+  <div class="modal-box" style="max-width:440px;">
+    <h3>📁 Category Manager</h3>
+    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">Create a new category to organize your menu items.</p>
+    
+    <label>New Category Name *</label>
+    <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+      <input type="text" id="newCatName" placeholder="e.g. Shakes & Desserts, Hot Wings" style="flex:1;" />
+      <button class="btn btn-primary btn-sm" onclick="createNewCategory()">+ Add</button>
+    </div>
+
+    <h4 style="color:var(--gold);font-size:0.95rem;margin-bottom:0.5rem;">Current Categories</h4>
+    <div id="categoryListContainer" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:0.5rem;background:var(--dark2);"></div>
+
+    <div class="modal-actions" style="margin-top:1.25rem;">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('categoryModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Product Modal with Image & Dynamic Category -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal-box">
+    <h3 id="productModalTitle">Add New Product</h3>
+    <input type="hidden" id="editProductId" />
+    
+    <label>Item Name *</label>
+    <input type="text" id="pName" placeholder="e.g. Zinger Burger" />
+
+    <div class="form-row">
+      <div>
+        <label>Category *</label>
+        <select id="pCategory" onchange="checkCategorySelection(this.value)">
+          <!-- Populated dynamically via JS -->
+        </select>
+      </div>
+      <div>
+        <label>Price (Rs.) *</label>
+        <input type="number" id="pPrice" placeholder="420" min="0" />
+      </div>
+    </div>
+
+    <!-- Inline custom category input if selected "+ Add New Category..." -->
+    <div id="customCategoryRow" style="display:none;margin-top:0.4rem;margin-bottom:0.6rem;">
+      <label style="color:var(--gold);">Type New Category Name:</label>
+      <input type="text" id="pCustomCategory" placeholder="e.g. Ice Cream, Pasta" />
+    </div>
+
+    <!-- PRODUCT PICTURE UPLOAD / URL -->
+    <div style="border:1px solid var(--border);border-radius:10px;padding:0.85rem;margin-top:0.75rem;background:rgba(201,168,76,0.04);">
+      <label style="margin-top:0;font-weight:700;color:var(--gold);">📸 Product Picture (Photo)</label>
+      <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.5rem;">Upload a photo from your computer/phone OR paste an image link.</p>
+      
+      <div style="margin-bottom:0.5rem;">
+        <label style="font-size:0.78rem;">Upload Image File:</label>
+        <input type="file" id="pImageFile" accept="image/*" onchange="handleImageUpload(event)" style="padding:0.4rem;font-size:0.82rem;" />
+      </div>
+
+      <div>
+        <label style="font-size:0.78rem;">Or Paste Image URL:</label>
+        <input type="text" id="pImage" placeholder="https://example.com/image.jpg" oninput="updateImagePreview(this.value)" />
+      </div>
+
+      <!-- Image Preview -->
+      <div id="imagePreviewWrap" style="display:none;margin-top:0.75rem;position:relative;width:100%;height:150px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:#100702;">
+        <img id="imagePreviewImg" style="width:100%;height:100%;object-fit:cover;" />
+        <button type="button" onclick="clearProductImage()" style="position:absolute;top:6px;right:6px;background:rgba(231,76,60,0.85);color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:0.75rem;cursor:pointer;">Remove</button>
+      </div>
+    </div>
+
+    <label style="margin-top:0.75rem;">Emoji Icon (Fallback)</label>
+    <input type="text" id="pEmoji" placeholder="🍔 (e.g. 🍔, 🍕, 🌯, 🍱, 🍲)" maxlength="4" />
+
+    <label>Description</label>
+    <textarea id="pDesc" rows="2" placeholder="Ingredients, taste, serving details"></textarea>
+
+    <div class="form-row">
+      <div>
+        <label>Badge</label>
+        <select id="pBadge">
+          <option value="">None</option>
+          <option value="popular">Popular</option>
+          <option value="spicy">Spicy</option>
+          <option value="veg">Vegetarian</option>
+        </select>
+      </div>
+      <div>
+        <label>Status</label>
+        <select id="pAvailable">
+          <option value="true">Available (Visible to Customers)</option>
+          <option value="false">Out of Stock (Hidden)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('productModal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Offer Modal -->
+<div class="modal-overlay" id="offerModal">
+  <div class="modal-box">
+    <h3 id="offerModalTitle">Create Deal / Offer</h3>
+    <input type="hidden" id="editOfferId" />
+    <label>Deal Title *</label>
+    <input type="text" id="oTitle" placeholder="e.g. Deal for Two" />
+    <label>Description *</label>
+    <textarea id="oDesc" rows="2" placeholder="e.g. 2 Small Pizzas + Dip Sauce + 500ML Drink"></textarea>
+    <div class="form-row">
+      <div>
+        <label>Deal Price / Discount *</label>
+        <input type="text" id="oDiscount" placeholder="e.g. Rs. 1,390 or 15% OFF" />
+      </div>
+      <div>
+        <label>Promo Code *</label>
+        <input type="text" id="oCode" placeholder="e.g. DEAL2" style="text-transform:uppercase" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Minimum Order (Rs.)</label>
+        <input type="number" id="oMinOrder" placeholder="1390" min="0" />
+      </div>
+      <div>
+        <label>Valid Until *</label>
+        <input type="date" id="oValidUntil" />
+      </div>
+    </div>
+    <label>Active</label>
+    <select id="oActive">
+      <option value="true">Yes — Show to customers</option>
+      <option value="false">No — Hide from customers</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('offerModal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveOffer()">Save Deal</button>
+    </div>
+  </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal-box">
+    <h3>🚴 Delivery Order Details</h3>
+    <div id="orderDetailContent"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('orderModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Dialog Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box" style="max-width:360px;text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:.75rem;">⚠️</div>
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmMsg" style="color:var(--text-muted);font-size:.9rem;margin:.5rem 0 1.25rem;"></p>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="confirmOkBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/data.js"></script>
+<script>
+/* ---- AUTH ---- */
+function adminLogout() {
+  sessionStorage.removeItem('opentables_admin_auth');
+  sessionStorage.removeItem('opentables_admin_login_time');
+  window.location.replace('index.html');
+}
+
+const loginTime = parseInt(sessionStorage.getItem('opentables_admin_login_time') || '0');
+if (loginTime && Date.now() - loginTime > 2 * 60 * 60 * 1000) adminLogout();
+
+/* ---- PASSWORD MANAGEMENT ---- */
+let currentAdminPass = localStorage.getItem('opentables_admin_custom_pass') || 'opentables@2024';
+
+function changePassword() {
+  const cur = document.getElementById('curPw').value;
+  const nw = document.getElementById('newPw').value;
+  const conf = document.getElementById('confirmPw').value;
+  const msg = document.getElementById('pwMsg');
+
+  if (cur !== currentAdminPass && cur !== 'opentables@2024' && cur !== 'admin123') {
+    msg.textContent = '❌ Current password is incorrect.'; msg.style.color = '#e74c3c'; return;
+  }
+  if (nw.length < 6) {
+    msg.textContent = '❌ New password must be at least 6 characters.'; msg.style.color = '#e74c3c'; return;
+  }
+  if (nw !== conf) {
+    msg.textContent = '❌ Passwords do not match.'; msg.style.color = '#e74c3c'; return;
+  }
+  currentAdminPass = nw;
+  localStorage.setItem('opentables_admin_custom_pass', nw);
+  msg.textContent = '✅ Password successfully updated!'; msg.style.color = '#27ae60';
+  document.getElementById('curPw').value = '';
+  document.getElementById('newPw').value = '';
+  document.getElementById('confirmPw').value = '';
+}
+
+/* ---- SECTION NAVIGATION ---- */
+function showSection(id, el) {
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.admin-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'products') renderProductsTable();
+  if (id === 'offers') renderOffersTable();
+  if (id === 'orders') renderOrdersTable();
+}
+
+/* ---- TOAST ---- */
+function showToast(msg, isError = false) {
+  let t = document.getElementById('adminToast');
+  if (!t) { t = document.createElement('div'); t.id = 'adminToast'; t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* ---- MODAL HELPERS ---- */
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('open'); });
+});
+
+/* ---- CONFIRM DIALOG ---- */
+function confirmDialog(title, msg, onOk) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  const btn = document.getElementById('confirmOkBtn');
+  btn.onclick = () => { closeModal('confirmModal'); onOk(); };
+  openModal('confirmModal');
+}
+
+/* ================================================================
+   DASHBOARD
+   ================================================================ */
+function renderDashboard() {
+  const products = getProducts();
+  const offers = getOffers();
+  const orders = getOrders();
+
+  const pending = orders.filter(o => o.status === 'pending').length;
+  const revenue = orders.filter(o => o.status === 'delivered').reduce((s, o) => s + o.total, 0);
+
+  document.getElementById('dashStats').innerHTML = `
+    <div class="admin-stat-card"><div class="stat-num">${products.length}</div><div class="stat-label">Total Menu Items</div></div>
+    <div class="admin-stat-card"><div class="stat-num">${products.filter(p=>p.available).length}</div><div class="stat-label">Available Items</div></div>
+    <div class="admin-stat-card"><div class="stat-num">${offers.filter(o=>o.active).length}</div><div class="stat-label">Active Deals</div></div>
+    <div class="admin-stat-card"><div class="stat-num">${orders.length}</div><div class="stat-label">Delivery Orders</div></div>
+    <div class="admin-stat-card" style="border-color:${pending?'#f39c12':'var(--border)'}"><div class="stat-num" style="color:${pending?'#f39c12':'var(--gold)'}">${pending}</div><div class="stat-label">Pending Orders</div></div>
+    <div class="admin-stat-card"><div class="stat-num">Rs. ${(revenue/1000).toFixed(1)}k</div><div class="stat-label">Delivered Revenue</div></div>
+  `;
+
+  // Recent orders
+  const recent = orders.slice(0, 5);
+  document.getElementById('recentOrdersList').innerHTML = recent.length ? recent.map(o => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.85rem;">
+      <div>
+        <strong style="color:var(--text)">${o.id}</strong><br/>
+        <span style="color:var(--text-muted)">${o.customer}</span><br/>
+        <span style="color:var(--gold);font-size:0.78rem;">📍 ${o.address ? (o.address.slice(0, 35) + '...') : 'Lahore Delivery'}</span>
+      </div>
+      <div style="text-align:right">
+        <span class="order-status status-${o.status}">${o.status}</span><br/>
+        <span style="color:var(--gold);font-weight:700">Rs. ${o.total.toLocaleString()}</span>
+      </div>
+    </div>
+  `).join('') : '<p style="color:var(--text-muted);font-size:.88rem">No orders placed yet.</p>';
+
+  // Unavailable items
+  const unavail = products.filter(p => !p.available);
+  document.getElementById('unavailableList').innerHTML = unavail.length ? unavail.map(p => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid var(--border);font-size:.85rem;">
+      <span>${p.emoji} ${p.name}</span>
+      <button class="btn btn-outline btn-sm" onclick="toggleAvailability(${p.id})">Enable Item</button>
+    </div>
+  `).join('') : '<p style="color:#27ae60;font-size:.88rem">✅ All menu items are currently active.</p>';
+
+  const badge = document.getElementById('pendingBadge');
+  badge.style.display = pending > 0 ? 'inline-block' : 'none';
+  badge.textContent = pending;
+
+  document.getElementById('lastUpdated').textContent = 'Live: ' + new Date().toLocaleTimeString('en-PK');
+}
+
+/* ================================================================
+   CATEGORY MANAGEMENT
+   ================================================================ */
+function openCategoryModal() {
+  renderCategoryList();
+  document.getElementById('newCatName').value = '';
+  openModal('categoryModal');
+}
+
+function renderCategoryList() {
+  const container = document.getElementById('categoryListContainer');
+  const cats = getCategories();
+  const defaultCats = ['Wraps & Shawarma', 'Platters', 'Burgers', 'Soups', 'Pan Asian', 'Pizza', 'Special Pizza'];
+
+  container.innerHTML = cats.map(c => {
+    const isCustom = !defaultCats.includes(c);
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0.5rem;border-bottom:1px solid rgba(201,168,76,0.1);font-size:0.88rem;">
+        <span style="color:var(--text);font-weight:600;">📁 ${c}</span>
+        ${isCustom ? `<button class="btn btn-danger btn-sm" style="padding:0.15rem 0.5rem;font-size:0.75rem;" onclick="removeCustomCategory('${c}')">Delete</button>` : `<span style="font-size:0.75rem;color:var(--text-muted);">Default</span>`}
+      </div>
+    `;
+  }).join('');
+}
+
+function createNewCategory() {
+  const inp = document.getElementById('newCatName');
+  const name = inp.value.trim();
+  if (!name) { showToast('Please enter category name.', true); return; }
+  addCategory(name);
+  inp.value = '';
+  renderCategoryList();
+  populateCategoryDropdown();
+  renderProductsTable();
+  showToast(`Category "${name}" created! ✅`);
+}
+
+function removeCustomCategory(name) {
+  confirmDialog('Delete Category', `Delete category "${name}"? Existing products in this category will keep their label.`, () => {
+    deleteCategory(name);
+    renderCategoryList();
+    populateCategoryDropdown();
+    renderProductsTable();
+    showToast('Category deleted.');
+  });
+}
+
+function populateCategoryDropdown(selectedVal = '') {
+  const select = document.getElementById('pCategory');
+  const cats = getCategories();
+  select.innerHTML = `
+    ${cats.map(c => `<option value="${c}" ${c === selectedVal ? 'selected' : ''}>${c}</option>`).join('')}
+    <option value="__NEW__" style="color:var(--gold);font-weight:700;">+ Create New Category...</option>
+  `;
+}
+
+function checkCategorySelection(val) {
+  const row = document.getElementById('customCategoryRow');
+  row.style.display = val === '__NEW__' ? 'block' : 'none';
+  if (val === '__NEW__') {
+    document.getElementById('pCustomCategory').focus();
+  }
+}
+
+/* ================================================================
+   PRODUCT IMAGE UPLOAD / URL
+   =============================================================== */
+let currentProductImageBase64 = '';
+
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    showToast('Please select a valid image file.', true);
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    currentProductImageBase64 = evt.target.result;
+    document.getElementById('pImage').value = ''; // clear text URL
+    updateImagePreview(currentProductImageBase64);
+    showToast('Photo loaded successfully! 📸');
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateImagePreview(src) {
+  const wrap = document.getElementById('imagePreviewWrap');
+  const img = document.getElementById('imagePreviewImg');
+  if (src && src.trim()) {
+    img.src = src.trim();
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+    img.src = '';
+  }
+}
+
+function clearProductImage() {
+  currentProductImageBase64 = '';
+  document.getElementById('pImage').value = '';
+  document.getElementById('pImageFile').value = '';
+  updateImagePreview('');
+}
+
+/* ================================================================
+   PRODUCTS
+   ================================================================ */
+let productCatFilter = 'All';
+
+function renderProductsTable() {
+  const products = getProducts();
+  const categories = ['All', ...getCategories()];
+
+  const filterEl = document.getElementById('productCatFilter');
+  filterEl.innerHTML = categories.map(c =>
+    `<button class="filter-btn${c === productCatFilter ? ' active' : ''}" onclick="setProductCat('${c}')">${c}</button>`
+  ).join('');
+
+  const filtered = productCatFilter === 'All' ? products : products.filter(p => p.category === productCatFilter);
+
+  document.getElementById('productsTableBody').innerHTML = filtered.map(p => `
+    <tr>
+      <td>
+        <div style="width:42px;height:42px;border-radius:6px;overflow:hidden;background:#150a04;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">
+          ${p.image ? `<img src="${p.image}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null;this.parentElement.innerHTML='${p.emoji || '🍽️'}'" />` : `<span style="font-size:1.4rem;">${p.emoji || '🍽️'}</span>`}
+        </div>
+      </td>
+      <td><strong>${p.name}</strong><br/><span style="font-size:0.78rem;color:var(--text-muted);">${p.desc ? p.desc.slice(0, 45) + '...' : ''}</span></td>
+      <td style="color:var(--text-muted)">${p.category}</td>
+      <td style="font-weight:700;color:var(--gold);">Rs. ${p.price.toLocaleString()}</td>
+      <td>${p.badge ? `<span class="dish-badge badge-${p.badge}">${p.badge}</span>` : '—'}</td>
+      <td>
+        <label class="toggle-switch">
+          <input type="checkbox" ${p.available ? 'checked' : ''} onchange="toggleAvailability(${p.id})" />
+          <span class="slider"></span>
+        </label>
+      </td>
+      <td>
+        <div class="admin-table-actions">
+          <button class="btn btn-outline btn-sm" onclick="openProductModal(${p.id})">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">🗑️ Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function setProductCat(cat) {
+  productCatFilter = cat;
+  renderProductsTable();
+}
+
+function toggleAvailability(id) {
+  const products = getProducts();
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  p.available = !p.available;
+  saveProducts(products);
+  renderProductsTable();
+  renderDashboard();
+  showToast(`${p.name} is now ${p.available ? 'Active ✅' : 'Hidden ❌'}`);
+}
+
+function openProductModal(id) {
+  const isEdit = !!id;
+  document.getElementById('productModalTitle').textContent = isEdit ? '✏️ Edit Menu Item' : '+ Add New Item';
+  document.getElementById('editProductId').value = id || '';
+  document.getElementById('customCategoryRow').style.display = 'none';
+  document.getElementById('pCustomCategory').value = '';
+  document.getElementById('pImageFile').value = '';
+  currentProductImageBase64 = '';
+
+  if (isEdit) {
+    const p = getProducts().find(x => x.id === id);
+    if (!p) return;
+    populateCategoryDropdown(p.category);
+    document.getElementById('pName').value = p.name;
+    document.getElementById('pPrice').value = p.price;
+    document.getElementById('pImage').value = p.image || '';
+    document.getElementById('pEmoji').value = p.emoji || '🍔';
+    document.getElementById('pDesc').value = p.desc || '';
+    document.getElementById('pBadge').value = p.badge || '';
+    document.getElementById('pAvailable').value = p.available ? 'true' : 'false';
+    updateImagePreview(p.image || '');
+  } else {
+    populateCategoryDropdown('Burgers');
+    document.getElementById('pName').value = '';
+    document.getElementById('pPrice').value = '';
+    document.getElementById('pImage').value = '';
+    document.getElementById('pEmoji').value = '🍔';
+    document.getElementById('pDesc').value = '';
+    document.getElementById('pBadge').value = '';
+    document.getElementById('pAvailable').value = 'true';
+    updateImagePreview('');
+  }
+  openModal('productModal');
+}
+
+function saveProduct() {
+  const name = document.getElementById('pName').value.trim();
+  const price = parseInt(document.getElementById('pPrice').value);
+  if (!name || isNaN(price) || price < 0) { showToast('Please enter an item name and valid price.', true); return; }
+
+  let category = document.getElementById('pCategory').value;
+  if (category === '__NEW__') {
+    const custom = document.getElementById('pCustomCategory').value.trim();
+    if (!custom) { showToast('Please type your new category name.', true); return; }
+    addCategory(custom);
+    category = custom;
+  }
+
+  // Check image
+  const imgUrl = document.getElementById('pImage').value.trim();
+  const finalImage = currentProductImageBase64 || imgUrl || '';
+
+  const products = getProducts();
+  const editId = parseInt(document.getElementById('editProductId').value);
+
+  const data = {
+    name,
+    category,
+    price,
+    image: finalImage,
+    emoji: document.getElementById('pEmoji').value.trim() || '🍽️',
+    desc: document.getElementById('pDesc').value.trim(),
+    badge: document.getElementById('pBadge').value,
+    available: document.getElementById('pAvailable').value === 'true',
+  };
+
+  if (editId) {
+    const idx = products.findIndex(p => p.id === editId);
+    if (idx !== -1) products[idx] = { ...products[idx], ...data };
+    showToast('Menu item updated ✅');
+  } else {
+    data.id = Date.now();
+    products.push(data);
+    showToast('Item added to menu ✅');
+  }
+  saveProducts(products);
+  closeModal('productModal');
+  renderProductsTable();
+}
+
+function deleteProduct(id) {
+  const p = getProducts().find(x => x.id === id);
+  confirmDialog('Delete Item', `Are you sure you want to delete "${p?.name}" from OPEN TABLES menu?`, () => {
+    saveProducts(getProducts().filter(x => x.id !== id));
+    renderProductsTable();
+    showToast('Item deleted.');
+  });
+}
+
+/* ================================================================
+   OFFERS
+   ================================================================ */
+function renderOffersTable() {
+  const offers = getOffers();
+  document.getElementById('offersTableBody').innerHTML = offers.map(o => `
+    <tr>
+      <td><strong>${o.title}</strong><br/><span style="font-size:0.8rem;color:var(--text-muted)">${o.desc}</span></td>
+      <td><span class="offer-discount" style="font-size:.78rem">${o.discount}</span></td>
+      <td><code style="color:var(--gold);background:rgba(201,168,76,.1);padding:.15rem .4rem;border-radius:4px">${o.code}</code></td>
+      <td style="color:var(--text-muted)">${o.minOrder ? 'Rs. ' + o.minOrder.toLocaleString() : 'None'}</td>
+      <td style="color:var(--text-muted)">${o.validUntil}</td>
+      <td>
+        <label class="toggle-switch">
+          <input type="checkbox" ${o.active ? 'checked' : ''} onchange="toggleOffer(${o.id})" />
+          <span class="slider"></span>
+        </label>
+      </td>
+      <td>
+        <div class="admin-table-actions">
+          <button class="btn btn-outline btn-sm" onclick="openOfferModal(${o.id})">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteOffer(${o.id})">🗑️ Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function toggleOffer(id) {
+  const offers = getOffers();
+  const o = offers.find(x => x.id === id);
+  if (!o) return;
+  o.active = !o.active;
+  saveOffers(offers);
+  renderOffersTable();
+  showToast(`Deal "${o.title}" is now ${o.active ? 'Active ✅' : 'Hidden'}`);
+}
+
+function openOfferModal(id) {
+  const isEdit = !!id;
+  document.getElementById('offerModalTitle').textContent = isEdit ? '✏️ Edit Deal' : '+ Create New Deal';
+  document.getElementById('editOfferId').value = id || '';
+
+  if (isEdit) {
+    const o = getOffers().find(x => x.id === id);
+    if (!o) return;
+    document.getElementById('oTitle').value = o.title;
+    document.getElementById('oDesc').value = o.desc;
+    document.getElementById('oDiscount').value = o.discount;
+    document.getElementById('oCode').value = o.code;
+    document.getElementById('oMinOrder').value = o.minOrder || '';
+    document.getElementById('oValidUntil').value = o.validUntil;
+    document.getElementById('oActive').value = o.active ? 'true' : 'false';
+  } else {
+    document.getElementById('oTitle').value = '';
+    document.getElementById('oDesc').value = '';
+    document.getElementById('oDiscount').value = '';
+    document.getElementById('oCode').value = '';
+    document.getElementById('oMinOrder').value = '';
+    document.getElementById('oValidUntil').value = '2025-12-31';
+    document.getElementById('oActive').value = 'true';
+  }
+  openModal('offerModal');
+}
+
+function saveOffer() {
+  const title = document.getElementById('oTitle').value.trim();
+  const code = document.getElementById('oCode').value.trim().toUpperCase();
+  const discount = document.getElementById('oDiscount').value.trim();
+  const validUntil = document.getElementById('oValidUntil').value;
+  if (!title || !code || !discount || !validUntil) { showToast('Please fill all required deal fields.', true); return; }
+
+  const offers = getOffers();
+  const editId = parseInt(document.getElementById('editOfferId').value);
+
+  const data = {
+    title,
+    desc: document.getElementById('oDesc').value.trim(),
+    discount,
+    code,
+    minOrder: parseInt(document.getElementById('oMinOrder').value) || 0,
+    validUntil,
+    active: document.getElementById('oActive').value === 'true',
+  };
+
+  if (editId) {
+    const idx = offers.findIndex(o => o.id === editId);
+    if (idx !== -1) offers[idx] = { ...offers[idx], ...data };
+    showToast('Deal updated ✅');
+  } else {
+    data.id = Date.now();
+    offers.push(data);
+    showToast('Deal created ✅');
+  }
+  saveOffers(offers);
+  closeModal('offerModal');
+  renderOffersTable();
+}
+
+function deleteOffer(id) {
+  const o = getOffers().find(x => x.id === id);
+  confirmDialog('Delete Deal', `Delete "${o?.title}" permanently?`, () => {
+    saveOffers(getOffers().filter(x => x.id !== id));
+    renderOffersTable();
+    showToast('Deal deleted.');
+  });
+}
+
+/* ================================================================
+   ORDERS (DELIVERY ONLY)
+   ================================================================ */
+const ORDER_STATUSES = ['pending', 'preparing', 'ready', 'delivered', 'cancelled'];
+
+function renderOrdersTable() {
+  const filter = document.getElementById('orderStatusFilter').value;
+  let orders = getOrders();
+  if (filter !== 'all') orders = orders.filter(o => o.status === filter);
+
+  const pending = getOrders().filter(o => o.status === 'pending').length;
+  const badge = document.getElementById('pendingBadge');
+  badge.style.display = pending > 0 ? 'inline-block' : 'none';
+  badge.textContent = pending;
+
+  document.getElementById('ordersTableBody').innerHTML = orders.length ? orders.map(o => `
+    <tr>
+      <td><code style="color:var(--gold)">${o.id}</code></td>
+      <td>
+        <strong>${o.customer}</strong><br/>
+        <a href="tel:${o.phone}" style="color:var(--gold);font-size:.82rem;">📞 ${o.phone}</a>
+      </td>
+      <td style="font-size:.82rem;max-width:200px;">
+        <span style="color:var(--text);">📍 ${o.address || 'Address provided at call'}</span>
+      </td>
+      <td style="font-size:.82rem;color:var(--text-muted);">${o.items.map(i => `${i.qty}× ${i.name}`).join(', ')}</td>
+      <td style="color:var(--gold);font-weight:700">Rs. ${o.total.toLocaleString()}</td>
+      <td><span class="order-status status-${o.status}">${o.status}</span></td>
+      <td style="color:var(--text-muted);font-size:.8rem">${o.time}</td>
+      <td>
+        <div class="admin-table-actions">
+          <button class="btn btn-outline btn-sm" onclick="viewOrder('${o.id}')">👁️ Details</button>
+          <select class="filter-btn" style="background:var(--dark2);color:var(--text);padding:.3rem .5rem;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:.78rem;" onchange="updateOrderStatus('${o.id}',this.value);this.value=''">
+            <option value="">Status</option>
+            ${ORDER_STATUSES.filter(s => s !== o.status).map(s => `<option value="${s}">${s}</option>`).join('')}
+          </select>
+          <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:2rem">No orders found.</td></tr>`;
+}
+
+function viewOrder(id) {
+  const o = getOrders().find(x => x.id === id);
+  if (!o) return;
+  document.getElementById('orderDetailContent').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;font-size:.9rem;">
+      <div><strong style="color:var(--gold)">Order ID:</strong><br/>${o.id}</div>
+      <div><strong style="color:var(--gold)">Status:</strong><br/><span class="order-status status-${o.status}">${o.status}</span></div>
+      <div><strong style="color:var(--gold)">Customer Name:</strong><br/>${o.customer}</div>
+      <div><strong style="color:var(--gold)">Phone Number:</strong><br/><a href="tel:${o.phone}" style="color:var(--gold);font-weight:700;">${o.phone}</a></div>
+      <div style="grid-column:1/-1;background:rgba(201,168,76,0.06);padding:0.75rem;border-radius:8px;border:1px solid var(--border);">
+        <strong style="color:var(--gold);">📍 Delivery Address in Lahore:</strong><br/>
+        <span style="font-size:0.95rem;color:#fff;">${o.address || 'Address provided verbally'}</span>
+      </div>
+      <div><strong style="color:var(--gold)">Service:</strong><br/>Doorstep Delivery (Rs. 150)</div>
+      <div><strong style="color:var(--gold)">Order Time:</strong><br/>${o.time}</div>
+      ${o.coupon ? `<div><strong style="color:var(--gold)">Deal Applied:</strong><br/>${o.coupon}</div>` : ''}
+      ${o.note ? `<div style="grid-column:1/-1"><strong style="color:var(--gold)">Customer Note:</strong><br/>${o.note}</div>` : ''}
+    </div>
+    <h4 style="color:var(--gold);margin-bottom:.75rem">Items Ordered:</h4>
+    ${o.items.map(i => `
+      <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--border);font-size:.88rem;">
+        <span>${i.qty}× ${i.name}</span>
+        <span style="color:var(--gold)">Rs. ${(i.price * i.qty).toLocaleString()}</span>
+      </div>
+    `).join('')}
+    <div style="display:flex;justify-content:space-between;margin-top:.75rem;font-weight:700;font-size:1.05rem;">
+      <span style="color:var(--gold)">Grand Total (including delivery)</span>
+      <span style="color:var(--gold)">Rs. ${o.total.toLocaleString()}</span>
+    </div>
+    <div style="margin-top:1.25rem">
+      <strong style="font-size:.85rem;color:var(--text-muted)">Update Status:</strong>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.4rem">
+        ${ORDER_STATUSES.map(s => `<button class="btn btn-sm ${s===o.status?'btn-primary':'btn-outline'}" onclick="updateOrderStatus('${o.id}','${s}');closeModal('orderModal');viewOrder('${o.id}')">${s}</button>`).join('')}
+      </div>
+    </div>
+  `;
+  openModal('orderModal');
+}
+
+function updateOrderStatus(id, status) {
+  if (!status) return;
+  const orders = getOrders();
+  const o = orders.find(x => x.id === id);
+  if (!o) return;
+  o.status = status;
+  saveOrders(orders);
+  renderOrdersTable();
+  showToast(`Order ${id} is now ${status} ✅`);
+}
+
+function deleteOrder(id) {
+  confirmDialog('Delete Order', `Delete order reference ${id}?`, () => {
+    saveOrders(getOrders().filter(o => o.id !== id));
+    renderOrdersTable();
+    showToast('Order removed.');
+  });
+}
+
+/* ================================================================
+   SETTINGS ACTIONS
+   ================================================================ */
+function clearOrders() {
+  confirmDialog('Clear All Orders', 'This will delete all order records from local storage. Are you sure?', () => {
+    saveOrders([]);
+    showToast('All order records cleared.');
+    renderOrdersTable();
+    renderDashboard();
+  });
+}
+
+function resetData() {
+  confirmDialog('Reload Original Menu', 'This will reload the official menu card items from OPEN TABLES.', () => {
+    localStorage.removeItem('opentables_seeded_v2');
+    localStorage.removeItem('opentables_products');
+    localStorage.removeItem('opentables_offers');
+    location.reload();
+  });
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  renderDashboard();
+
+  setInterval(() => {
+    const activeSection = document.querySelector('.admin-section.active');
+    if (activeSection && activeSection.id === 'sec-dashboard') renderDashboard();
+    const pending = getOrders().filter(o => o.status === 'pending').length;
+    const badge = document.getElementById('pendingBadge');
+    badge.style.display = pending > 0 ? 'inline-block' : 'none';
+    badge.textContent = pending;
+  }, 30000);
+});
+</script>
+
+<style>
+@media (max-width: 700px) {
+  .dash-split { grid-template-columns: 1fr !important; }
+}
+</style>
+
+</body>
+</html>
